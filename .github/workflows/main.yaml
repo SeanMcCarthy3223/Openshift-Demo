@@ -14,7 +14,7 @@ jobs:
       # Use GitHub SHA for image tag for uniqueness
       IMAGE_TAG: ${{ github.sha }}
       # Define OpenShift project name (replace with your actual project name)
-      OPENSHIFT_PROJECT: your-openshift-project # TODO: Replace with your OpenShift project name
+      OPENSHIFT_PROJECT: default # TODO: Replace with your OpenShift project name
 
     steps:
     - name: Checkout code
