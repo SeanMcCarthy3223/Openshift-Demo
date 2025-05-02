@@ -9,7 +9,7 @@ This repository contains a simple Flask demo application designed to run on Open
 *   A health check endpoint (`/healthz`) for OpenShift liveness/readiness probes.
 *   A Dockerfile for containerizing the application.
 *   OpenShift manifests (Deployment, Service, Route) for deployment.
-*   A GitHub Actions CI/CD pipeline (`.github/workflows/main.yaml`) for automated build and deployment to OpenShift.
+*   A GitHub Actions CI/CD pipeline (`.github/workflows/main.yaml`) for automated build and deployment to OpenShift. 
 *   A sample Grafana dashboard (`grafana-dashboard.json`) for visualizing application metrics and logs.
 
 ## Directory Structure 
