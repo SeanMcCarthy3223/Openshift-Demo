@@ -1,0 +1,88 @@
+name: Build and Deploy to OpenShift
+
+on:
+  push:
+    branches:
+      - main # Or your default branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      # Define environment variables for image name and tag
+      IMAGE_NAME: openshift-demo-app
+      # Use GitHub SHA for image tag for uniqueness
+      IMAGE_TAG: ${{ github.sha }}
+      # Define OpenShift project name (replace with your actual project name)
+      OPENSHIFT_PROJECT: your-openshift-project # TODO: Replace with your OpenShift project name
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    # Step 1: Log in to OpenShift Internal Registry
+    # Requires secrets: OPENSHIFT_REGISTRY_USER, OPENSHIFT_REGISTRY_PASSWORD, OPENSHIFT_REGISTRY_URL
+    - name: Log in to OpenShift Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ secrets.OPENSHIFT_REGISTRY_URL }} # e.g., image-registry.openshift-image-registry.svc:5000
+        username: ${{ secrets.OPENSHIFT_REGISTRY_USER }} # Often 'serviceaccount' or similar
+        password: ${{ secrets.OPENSHIFT_REGISTRY_PASSWORD }} # Token for the service account
+
+    # Step 2: Build and Push Docker image
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ secrets.OPENSHIFT_REGISTRY_URL }}/${{ env.OPENSHIFT_PROJECT }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }},${{ secrets.OPENSHIFT_REGISTRY_URL }}/${{ env.OPENSHIFT_PROJECT }}/${{ env.IMAGE_NAME }}:latest
+        # Add build arguments if needed
+        # build-args: |
+        #   arg1=value1
+        #   arg2=value2
+
+    # Step 3: Install OpenShift CLI (oc)
+    - name: Install oc
+      run: |
+        curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable-4.18/openshift-client-linux.tar.gz
+        tar xzvf openshift-client-linux.tar.gz
+        sudo mv oc /usr/local/bin/
+        sudo mv kubectl /usr/local/bin/
+        oc version
+
+    # Step 4: Log in to OpenShift Cluster
+    # Requires secrets: OPENSHIFT_SERVER_URL, OPENSHIFT_TOKEN
+    - name: Log in to OpenShift Cluster
+      run: |
+        oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_SERVER_URL }} --insecure-skip-tls-verify=true # Use --insecure-skip-tls-verify cautiously
+        oc project ${{ env.OPENSHIFT_PROJECT }}
+
+    # Step 5: Apply OpenShift Manifests
+    # This will create or update the Deployment, Service, and Route
+    - name: Apply OpenShift manifests
+      run: |
+        # Substitute environment variables in deployment.yaml
+        envsubst < openshift/deployment.yaml > /tmp/deployment.yaml
+        oc apply -f /tmp/deployment.yaml
+        oc apply -f openshift/service.yaml
+        oc apply -f openshift/route.yaml
+
+    # Step 6: Trigger deployment rollout (optional, but good practice)
+    # Ensures the deployment uses the newly pushed image tag
+    - name: Trigger deployment rollout
+      run: |
+        oc rollout status deployment/${{ env.IMAGE_NAME }} -n ${{ env.OPENSHIFT_PROJECT }} --timeout=120s
+        # If the apply didn't pick up the new image automatically, force an update:
+        # oc set image deployment/${{ env.IMAGE_NAME }} ${{ env.IMAGE_NAME }}=${{ secrets.OPENSHIFT_REGISTRY_URL }}/${{ env.OPENSHIFT_PROJECT }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -n ${{ env.OPENSHIFT_PROJECT }}
+        # oc rollout status deployment/${{ env.IMAGE_NAME }} -n ${{ env.OPENSHIFT_PROJECT }} --timeout=120s
+
+    # Step 7: Log out from OpenShift Cluster (optional, good practice)
+    - name: Log out from OpenShift Cluster
+      if: always() # Run even if previous steps fail
+      run: |
+        oc logout
+

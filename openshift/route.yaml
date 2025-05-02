@@ -1,0 +1,21 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: openshift-demo-app-route
+  labels:
+    app: openshift-demo-app
+spec:
+  # Replace with your desired hostname or leave blank for OpenShift to generate one
+  # host: openshift-demo-app.your-openshift-apps-domain.com
+  to:
+    kind: Service
+    name: openshift-demo-app-service
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    # Optional: configure insecureEdgeTerminationPolicy if needed
+    # insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+

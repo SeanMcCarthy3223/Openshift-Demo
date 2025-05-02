@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openshift-demo-app-service
+  labels:
+    app: openshift-demo-app
+spec:
+  selector:
+    app: openshift-demo-app
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP # Default type, suitable for internal access or exposure via Route
+

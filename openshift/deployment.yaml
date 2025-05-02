@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openshift-demo-app
+  labels:
+    app: openshift-demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openshift-demo-app
+  template:
+    metadata:
+      labels:
+        app: openshift-demo-app
+    spec:
+      containers:
+      - name: openshift-demo-app
+        # Replace with your actual image repository and tag from CI/CD
+        image: image-registry.openshift-image-registry.svc:5000/${OPENSHIFT_PROJECT}/openshift-demo-app:${IMAGE_TAG}
+        ports:
+        - containerPort: 8080
+        # Add readiness and liveness probes for production
+        readinessProbe:
+          httpGet:
+            path: /healthz # Assuming a /healthz endpoint exists
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz # Assuming a /healthz endpoint exists
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        # Add resource limits for production
+        # resources:
+        #   requests:
+        #     memory: "64Mi"
+        #     cpu: "250m"
+        #   limits:
+        #     memory: "128Mi"
+        #     cpu: "500m"
+
