@@ -12,7 +12,7 @@ This repository contains a simple Flask demo application designed to run on Open
 *   A GitHub Actions CI/CD pipeline (`.github/workflows/main.yaml`) for automated build and deployment to OpenShift.
 *   A sample Grafana dashboard (`grafana-dashboard.json`) for visualizing application metrics and logs.
 
-## Directory Structure
+## Directory Structure 
 
 ```
 openshift-demo-app/
